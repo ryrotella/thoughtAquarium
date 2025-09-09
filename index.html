@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>smAqua - Swimming Thoughts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #001122 0%, #002244 50%, #001122 100%);
+            color: white;
+            overflow: hidden;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #aquarium {
+            border: 3px solid #334455;
+            border-radius: 10px;
+            display: block;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #001133 0%, #002244 100%);
+            position: relative;
+        }
+        
+        #breathingOverlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        
+        .breathing-circle {
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(135, 206, 235, 0.8);
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.3s ease;
+            background: rgba(135, 206, 235, 0.1);
+        }
+        
+        .breathing-circle.inhale {
+            transform: scale(1.5);
+            background: rgba(135, 206, 235, 0.2);
+            border-color: rgba(135, 206, 235, 1);
+        }
+        
+        .breathing-circle.hold {
+            transform: scale(1.5);
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 1);
+        }
+        
+        .breathing-circle.exhale {
+            transform: scale(1);
+            background: rgba(135, 206, 235, 0.1);
+            border-color: rgba(135, 206, 235, 0.6);
+        }
+        
+        .breathing-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            text-shadow: 0 0 10px rgba(135, 206, 235, 0.8);
+        }
+        
+        .breathing-instructions {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        #controls {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 300px;
+            margin: 20px auto;
+            max-width: 900px;
+        }
+        
+        #thoughtInput {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: #334455;
+            color: white;
+        }
+        
+        #thoughtInput::placeholder {
+            color: #aabbcc;
+        }
+        
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        button:hover {
+            background: #0088ff;
+        }
+        
+        #moodControls {
+            margin: 10px 0;
+        }
+        
+        #moodControls label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aabbcc;
+        }
+        
+        #moodControls button {
+            font-size: 11px;
+            padding: 6px 10px;
+            margin: 2px;
+            background: #445566;
+        }
+        
+        #modeControls button {
+            font-size: 11px;
+            padding: 6px 10px;
+            margin: 2px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #modeControls button:hover {
+            background: #0088ff;
+        }
+        
+        #moodControls button.active {
+            background: #0088ff;
+        }
+        
+        #info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aabbcc;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Layout: Aquarium + Right Panel -->
+    <div style="display: flex; justify-content: center; align-items: flex-start; gap: 30px; margin: 20px auto; padding-bottom: 120px; max-width: 1400px;">
+        <!-- Aquarium Section -->
+        <div style="position: relative; display: inline-block;">
+            <canvas id="aquarium" width="900" height="600"></canvas>
+            
+            <div id="breathingOverlay">
+                <div class="breathing-instructions" id="breathingInstructions">
+                    Hold mouse down during INHALE, release during EXHALE
+                </div>
+                <div class="breathing-circle" id="breathingCircle">
+                    <div class="breathing-text" id="breathingText">
+                        INHALE<br><span style="font-size: 12px;">4s</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Control Panel -->
+        <div style="display: flex; flex-direction: column; gap: 20px; width: 320px; padding: 20px; background: rgba(0,17,34,0.8); border-radius: 15px; border: 2px solid #4A90E2;">
+            <!-- Mind Modes -->
+            <div>
+                <h4 style="margin: 0 0 15px 0; color: #4A90E2; font-size: 18px; font-weight: bold;">🧠 Mind Modes</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button onclick="toggleBreathing()" id="breathingBtn" style="font-size: 16px; padding: 12px; background: #95A5A6; border: none; border-radius: 12px; color: white; cursor: pointer; font-weight: 600;">🧘‍♂️ Breathe</button>
+                    <button onclick="togglePollution()" id="pollutionBtn" style="font-size: 16px; padding: 12px; background: #E74C3C; border: none; border-radius: 12px; color: white; cursor: pointer; font-weight: 600;">📱 Chaos</button>
+                </div>
+                <button onclick="clearTank()" style="font-size: 16px; padding: 12px; background: #7F8C8D; border: none; border-radius: 12px; color: white; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px;">🗑️ Clear All</button>
+            </div>
+
+            <!-- Mood Selection -->
+            <div>
+                <h4 style="margin: 0 0 15px 0; color: #4A90E2; font-size: 18px; font-weight: bold;">🎭 Emotional State</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button onclick="changeMood('calm')" id="calmBtn" style="font-size: 15px; padding: 10px; background: #3498DB; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">😌 Calm</button>
+                    <button onclick="changeMood('ecstatic')" id="ecstaticBtn" style="font-size: 15px; padding: 10px; background: #FF69B4; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">🎉 Ecstatic</button>
+                    <button onclick="changeMood('desire')" id="desireBtn" style="font-size: 15px; padding: 10px; background: #E91E63; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">💖 Desire</button>
+                    <button onclick="changeMood('hunger')" id="hungerBtn" style="font-size: 15px; padding: 10px; background: #FF9800; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">🍽️ Hunger</button>
+                    <button onclick="changeMood('fear')" id="fearBtn" style="font-size: 15px; padding: 10px; background: #4CAF50; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">😨 Fear</button>
+                    <button onclick="changeMood('anger')" id="angerBtn" style="font-size: 15px; padding: 10px; background: #F44336; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">😡 Rage</button>
+                    <button onclick="changeMood('sad')" id="sadBtn" style="font-size: 15px; padding: 10px; background: #607D8B; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">😢 Sad</button>
+                    <button onclick="changeMood('tired')" id="tiredBtn" style="font-size: 15px; padding: 10px; background: #9B59B6; border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600;">😴 Tired</button>
+                </div>
+            </div>
+
+            <!-- Status & Help -->
+            <div>
+                <div id="info">
+                    <h4 style="margin: 0 0 15px 0; color: #4A90E2; font-size: 18px; font-weight: bold;">📊 Mind State</h4>
+                    <div style="color: white; font-size: 16px; line-height: 1.8;">
+                        <div>💭 Thoughts: <span id="thoughtCount" style="color: #4A90E2; font-weight: bold;">0</span></div>
+                        <div>🎭 Mood: <span id="currentMood" style="color: #4A90E2; font-weight: bold;">Calm</span></div>
+                        <div>⚡ Energy: <span id="moodIntensity" style="color: #4A90E2; font-weight: bold;">50</span>%</div>
+                    </div>
+                    <div id="breathingStatus" style="display: none; margin-top: 12px; font-weight: bold; color: #87CEEB; font-size: 14px;"></div>
+                </div>
+
+                <!-- Quick Help -->
+                <div style="margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                    <strong style="color: #4A90E2;">💡 How to Use:</strong><br>
+                    • <strong>Click</strong> thoughts to focus them<br>
+                    • <strong>Double-click</strong> to release thoughts<br>
+                    • <strong>Triple-click</strong> to split thoughts<br>
+                    • Thoughts <strong>merge naturally</strong> when slow<br>
+                    • <strong>Voice mode</strong> creates from speech<br>
+                    • <strong>Breathing mode</strong> calms the mind
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Input Bar -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(0,17,34,0.95) 0%, rgba(0,34,68,0.98) 100%); padding: 20px; border-top: 3px solid #4A90E2; box-shadow: 0 -5px 20px rgba(0,0,0,0.3);">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <!-- Main Input Row -->
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <input type="text" id="thoughtInput" placeholder="What's swimming through your mind?" 
+                           style="font-size: 20px; padding: 18px 25px; width: 100%; border: 2px solid #4A90E2; border-radius: 30px; background: rgba(255,255,255,0.95); color: #333; font-weight: 600; box-shadow: 0 3px 15px rgba(74,144,226,0.3);" />
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)" />
+                </div>
+                <button onclick="addThought()" style="font-size: 18px; padding: 18px 30px; background: linear-gradient(45deg, #4A90E2, #357ABD); border: none; border-radius: 30px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 15px rgba(74,144,226,0.4);">💭 Share Thought</button>
+            </div>
+            
+            <!-- Alternative Input Methods -->
+            <div style="display: flex; justify-content: center; gap: 20px;">
+                <button onclick="document.getElementById('imageInput').click()" style="font-size: 16px; padding: 12px 20px; background: #FF6B9D; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600; box-shadow: 0 2px 10px rgba(255,107,157,0.3);">📷 Add Image</button>
+                <button onclick="toggleVoice()" id="voiceBtn" style="font-size: 16px; padding: 12px 20px; background: #4ECDC4; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600; box-shadow: 0 2px 10px rgba(78,205,196,0.3);">🎤 Start Voice</button>
+            </div>
+            
+            <!-- Voice Transcript -->
+            <div id="transcriptContainer" style="display: none; margin-top: 15px; padding: 15px; background: rgba(135,206,235,0.15); border-radius: 15px; border: 1px solid rgba(135,206,235,0.3);">
+                <small style="color: #87CEEB; font-weight: bold; font-size: 14px;">🎤 Listening...</small>
+                <div id="transcriptDisplay" style="margin-top: 8px; font-size: 14px; min-height: 20px; color: white;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="src/utils/Physics.js"></script>
+    <script src="src/utils/Animation.js"></script>
+    <script src="src/core/Thought.js"></script>
+    <script src="src/core/ImageThought.js"></script>
+    <script src="src/core/Tank.js"></script>
+    <script src="src/input/VoiceInput.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>
